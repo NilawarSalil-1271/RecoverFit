@@ -71,6 +71,10 @@ export default function CheckInScreen() {
                 score: recovery.score.toString(),
                 status: recovery.status,
                 recommendation: recovery.recommendation,
+                trainingType: recovery.trainingType,
+                trainingIntensity: recovery.trainingIntensity,
+                trainingFocus: recovery.trainingFocus,
+                reason: recovery.reason,
             },
         });
     };

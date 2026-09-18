@@ -7,6 +7,12 @@ import {
     Text,
     View,
 } from 'react-native';
+import Svg, {
+    Circle,
+    Line,
+    Polyline,
+    Text as SvgText,
+} from 'react-native-svg';
 
 import {
     CheckInRecord,
@@ -22,8 +28,8 @@ export default function ProgressScreen() {
 
         const data = await getCheckIns();
 
-        // Newest first
-        setHistory([...data].reverse());
+        // Oldest first for the chart
+        setHistory(data);
 
         setLoading(false);
     };
@@ -43,10 +49,6 @@ export default function ProgressScreen() {
         });
     };
 
-    // -----------------------------
-    // Statistics
-    // -----------------------------
-
     const scores = history.map((item) => item.score);
 
     const averageScore =
@@ -63,11 +65,56 @@ export default function ProgressScreen() {
     const lowestScore =
         scores.length > 0 ? Math.min(...scores) : 0;
 
-    const latest = history[0];
+    const latest =
+        history.length > 0
+            ? history[history.length - 1]
+            : undefined;
 
     // -----------------------------
-    // Loading
+    // Chart configuration
     // -----------------------------
+
+    const chartWidth = 320;
+    const chartHeight = 190;
+
+    const chartPaddingLeft = 38;
+    const chartPaddingRight = 15;
+    const chartPaddingTop = 20;
+    const chartPaddingBottom = 35;
+
+    const graphWidth =
+        chartWidth -
+        chartPaddingLeft -
+        chartPaddingRight;
+
+    const graphHeight =
+        chartHeight -
+        chartPaddingTop -
+        chartPaddingBottom;
+
+    const getX = (index: number) => {
+        if (scores.length <= 1) {
+            return chartPaddingLeft + graphWidth / 2;
+        }
+
+        return (
+            chartPaddingLeft +
+            (index / (scores.length - 1)) * graphWidth
+        );
+    };
+
+    const getY = (score: number) => {
+        return (
+            chartPaddingTop +
+            ((100 - score) / 100) * graphHeight
+        );
+    };
+
+    const points = scores
+        .map((score, index) => {
+            return `${getX(index)},${getY(score)}`;
+        })
+        .join(' ');
 
     if (loading) {
         return (
@@ -93,7 +140,7 @@ export default function ProgressScreen() {
                 Understand how your recovery changes over time.
             </Text>
 
-            {/* Latest Score */}
+            {/* Latest Recovery */}
 
             {latest && (
                 <View style={styles.latestCard}>
@@ -114,6 +161,138 @@ export default function ProgressScreen() {
                     </Text>
                 </View>
             )}
+
+            {/* Trend Chart */}
+
+            <Text style={styles.sectionTitle}>
+                Recovery Trend
+            </Text>
+
+            <View style={styles.chartCard}>
+                {scores.length < 2 ? (
+                    <View style={styles.chartEmpty}>
+                        <Text style={styles.chartEmptyTitle}>
+                            Not enough data yet
+                        </Text>
+
+                        <Text style={styles.chartEmptyText}>
+                            Complete at least two check-ins to see your
+                            recovery trend.
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.chartWrapper}>
+                        <Svg
+                            width={chartWidth}
+                            height={chartHeight}
+                        >
+                            {/* 100 line */}
+                            <Line
+                                x1={chartPaddingLeft}
+                                y1={getY(100)}
+                                x2={chartWidth - chartPaddingRight}
+                                y2={getY(100)}
+                                stroke="#dddddd"
+                                strokeWidth="1"
+                            />
+
+                            <SvgText
+                                x="5"
+                                y={getY(100) + 4}
+                                fontSize="11"
+                                fill="#777777"
+                            >
+                                100
+                            </SvgText>
+
+                            {/* 50 line */}
+                            <Line
+                                x1={chartPaddingLeft}
+                                y1={getY(50)}
+                                x2={chartWidth - chartPaddingRight}
+                                y2={getY(50)}
+                                stroke="#dddddd"
+                                strokeWidth="1"
+                            />
+
+                            <SvgText
+                                x="12"
+                                y={getY(50) + 4}
+                                fontSize="11"
+                                fill="#777777"
+                            >
+                                50
+                            </SvgText>
+
+                            {/* 0 line */}
+                            <Line
+                                x1={chartPaddingLeft}
+                                y1={getY(0)}
+                                x2={chartWidth - chartPaddingRight}
+                                y2={getY(0)}
+                                stroke="#dddddd"
+                                strokeWidth="1"
+                            />
+
+                            <SvgText
+                                x="18"
+                                y={getY(0) + 4}
+                                fontSize="11"
+                                fill="#777777"
+                            >
+                                0
+                            </SvgText>
+
+                            {/* Recovery line */}
+                            <Polyline
+                                points={points}
+                                fill="none"
+                                stroke="#111111"
+                                strokeWidth="3"
+                                strokeLinejoin="round"
+                                strokeLinecap="round"
+                            />
+
+                            {/* Data points */}
+                            {scores.map((score, index) => (
+                                <Circle
+                                    key={`${score}-${index}`}
+                                    cx={getX(index)}
+                                    cy={getY(score)}
+                                    r="5"
+                                    fill="#ffffff"
+                                    stroke="#111111"
+                                    strokeWidth="3"
+                                />
+                            ))}
+
+                            {/* First date */}
+                            <SvgText
+                                x={getX(0)}
+                                y={chartHeight - 8}
+                                fontSize="10"
+                                fill="#777777"
+                                textAnchor="middle"
+                            >
+                                {formatDate(history[0].date)}
+                            </SvgText>
+
+                            {/* Latest date */}
+                            <SvgText
+                                x={getX(scores.length - 1)}
+                                y={chartHeight - 8}
+                                fontSize="10"
+                                fill="#777777"
+                                textAnchor="middle"
+                            >
+                                {formatDate(
+                                    history[history.length - 1].date
+                                )}
+                            </SvgText>
+                        </Svg>
+                    </View>
+                )}
+            </View>
 
             {/* Statistics */}
 
@@ -189,37 +368,39 @@ export default function ProgressScreen() {
                     </Text>
                 </View>
             ) : (
-                history.map((item) => (
-                    <View
-                        key={item.id}
-                        style={styles.historyCard}
-                    >
-                        <View style={styles.historyInfo}>
-                            <Text style={styles.date}>
-                                {formatDate(item.date)}
-                            </Text>
+                [...history]
+                    .reverse()
+                    .map((item) => (
+                        <View
+                            key={item.id}
+                            style={styles.historyCard}
+                        >
+                            <View style={styles.historyInfo}>
+                                <Text style={styles.date}>
+                                    {formatDate(item.date)}
+                                </Text>
 
-                            <Text style={styles.historyStatus}>
-                                {item.status}
-                            </Text>
+                                <Text style={styles.historyStatus}>
+                                    {item.status}
+                                </Text>
 
-                            <Text style={styles.metrics}>
-                                Sleep {item.sleep}h • Energy {item.energy}
-                                /5 • Soreness {item.soreness}/5
-                            </Text>
+                                <Text style={styles.metrics}>
+                                    Sleep {item.sleep}h • Energy {item.energy}
+                                    /5 • Soreness {item.soreness}/5
+                                </Text>
+                            </View>
+
+                            <View style={styles.scoreContainer}>
+                                <Text style={styles.historyScore}>
+                                    {item.score}
+                                </Text>
+
+                                <Text style={styles.historyOutOf}>
+                                    /100
+                                </Text>
+                            </View>
                         </View>
-
-                        <View style={styles.scoreContainer}>
-                            <Text style={styles.historyScore}>
-                                {item.score}
-                            </Text>
-
-                            <Text style={styles.historyOutOf}>
-                                /100
-                            </Text>
-                        </View>
-                    </View>
-                ))
+                    ))
             )}
         </ScrollView>
     );
@@ -291,6 +472,37 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
         marginBottom: 14,
+    },
+
+    chartCard: {
+        backgroundColor: '#f5f5f5',
+        borderRadius: 20,
+        padding: 12,
+        marginBottom: 30,
+        alignItems: 'center',
+    },
+
+    chartWrapper: {
+        width: '100%',
+        alignItems: 'center',
+    },
+
+    chartEmpty: {
+        padding: 30,
+        alignItems: 'center',
+    },
+
+    chartEmptyTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+
+    chartEmptyText: {
+        fontSize: 14,
+        color: '#777777',
+        textAlign: 'center',
+        lineHeight: 21,
     },
 
     statsRow: {
