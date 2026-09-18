@@ -8,6 +8,13 @@ export type CheckInRecord = {
     sleep: number;
     energy: number;
     soreness: number;
+    // Optional muscle-specific soreness ratings (1-5)
+    legsSoreness?: number;
+    chestSoreness?: number;
+    backSoreness?: number;
+    shouldersSoreness?: number;
+    armsSoreness?: number;
+    coreSoreness?: number;
     stress: number;
     score: number;
     status: string;

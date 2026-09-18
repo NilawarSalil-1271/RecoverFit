@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
     Alert,
@@ -14,10 +14,18 @@ import { saveCheckIn } from '../services/checkInStorage';
 import { calculateRecovery } from '../services/recoveryengine';
 
 export default function CheckInScreen() {
+  const router = useRouter();
     const [sleep, setSleep] = useState('');
     const [energy, setEnergy] = useState<number | null>(null);
     const [soreness, setSoreness] = useState<number | null>(null);
     const [stress, setStress] = useState<number | null>(null);
+    // Muscle-specific soreness states (optional)
+    const [legs, setLegs] = useState<number | null>(null);
+    const [chest, setChest] = useState<number | null>(null);
+    const [back, setBack] = useState<number | null>(null);
+    const [shoulders, setShoulders] = useState<number | null>(null);
+    const [arms, setArms] = useState<number | null>(null);
+    const [core, setCore] = useState<number | null>(null);
 
     const submitCheckIn = async () => {
         if (
@@ -52,17 +60,24 @@ export default function CheckInScreen() {
         });
 
         // Save check-in to local storage
-        await saveCheckIn({
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            sleep: sleepValue,
-            energy,
-            soreness,
-            stress,
-            score: recovery.score,
-            status: recovery.status,
-            recommendation: recovery.recommendation,
-        });
+            await saveCheckIn({
+                id: Date.now().toString(),
+                date: new Date().toISOString(),
+                sleep: sleepValue,
+                energy,
+                soreness,
+                stress,
+                // optional muscle-specific soreness ratings
+                legsSoreness: legs ?? undefined,
+                chestSoreness: chest ?? undefined,
+                backSoreness: back ?? undefined,
+                shouldersSoreness: shoulders ?? undefined,
+                armsSoreness: arms ?? undefined,
+                coreSoreness: core ?? undefined,
+                score: recovery.score,
+                status: recovery.status,
+                recommendation: recovery.recommendation,
+            });
 
         // Show recovery result
         router.push({
@@ -170,20 +185,35 @@ export default function CheckInScreen() {
                 />
             </View>
 
-            {/* Stress */}
+            {/* Muscle Specific Soreness */}
             <View style={styles.card}>
-                <Text style={styles.question}>
-                    How stressed do you feel?
-                </Text>
-
-                <Text style={styles.scaleText}>
-                    1 = Very relaxed   •   5 = Very stressed
-                </Text>
-
-                <RatingButtons
-                    value={stress}
-                    onChange={setStress}
-                />
+                <Text style={styles.question}>Legs soreness</Text>
+                <RatingButtons value={legs} onChange={setLegs} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>Chest soreness</Text>
+                <RatingButtons value={chest} onChange={setChest} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>Back soreness</Text>
+                <RatingButtons value={back} onChange={setBack} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>Shoulders soreness</Text>
+                <RatingButtons value={shoulders} onChange={setShoulders} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>Arms soreness</Text>
+                <RatingButtons value={arms} onChange={setArms} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>Core soreness</Text>
+                <RatingButtons value={core} onChange={setCore} />
+            </View>
+            <View style={styles.card}>
+                <Text style={styles.question}>How stressed do you feel?</Text>
+                <Text style={styles.scaleText}>1 = Very relaxed   •   5 = Very stressed</Text>
+                <RatingButtons value={stress} onChange={setStress} />
             </View>
 
             {/* Submit */}
