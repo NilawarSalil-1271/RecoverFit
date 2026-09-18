@@ -57,6 +57,12 @@ export default function CheckInScreen() {
             energy,
             soreness,
             stress,
+            legsSoreness: legs ?? undefined,
+            chestSoreness: chest ?? undefined,
+            backSoreness: back ?? undefined,
+            shouldersSoreness: shoulders ?? undefined,
+            armsSoreness: arms ?? undefined,
+            coreSoreness: core ?? undefined,
         });
 
         // Save check-in to local storage

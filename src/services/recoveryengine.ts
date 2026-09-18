@@ -3,6 +3,13 @@ export type RecoveryInput = {
     energy: number;
     soreness: number;
     stress: number;
+    // Optional muscle‑specific soreness ratings (1‑5). Undefined means not provided.
+    legsSoreness?: number;
+    chestSoreness?: number;
+    backSoreness?: number;
+    shouldersSoreness?: number;
+    armsSoreness?: number;
+    coreSoreness?: number;
 };
 
 export type RecoveryResult = {
@@ -74,6 +81,52 @@ export function calculateRecovery(
 
         reason =
             'Your current recovery indicators suggest that a lighter day may be more appropriate.';
+    }
+
+    // ---------- Muscle‑aware augmentation ----------
+    // Identify muscles with high soreness (rating 4 or 5). Undefined or lower ratings are ignored.
+    const muscleRatings: { [key: string]: number | undefined } = {
+        legs: input.legsSoreness,
+        chest: input.chestSoreness,
+        back: input.backSoreness,
+        shoulders: input.shouldersSoreness,
+        arms: input.armsSoreness,
+        core: input.coreSoreness,
+    };
+    const highSorenessAreas = Object.entries(muscleRatings)
+        .filter(([_, v]) => v !== undefined && v >= 4)
+        .map(([k]) => k);
+
+    if (highSorenessAreas.length > 0) {
+        const hasLeg = highSorenessAreas.includes('legs');
+        const hasUpper = ['chest', 'back', 'shoulders', 'arms', 'core'].some((area) =>
+            highSorenessAreas.includes(area)
+        );
+
+        if (roundedScore >= 80) {
+            // Good overall recovery – tailor recommendation based on sore area.
+            if (hasLeg) {
+                trainingType = 'Upper‑body / Technique Focus';
+                trainingIntensity = 'Moderate';
+                trainingFocus = 'Upper‑body strength, technique and mobility work';
+                reason =
+                    'High soreness reported in legs; reduce leg loading and focus on upper‑body or technique work.';
+            } else if (hasUpper) {
+                trainingType = 'Lower‑body / Technique Focus';
+                trainingIntensity = 'Moderate';
+                trainingFocus = 'Lower‑body strength, technique and mobility work';
+                reason =
+                    'High soreness reported in upper‑body areas; reduce upper‑body loading and focus on lower‑body or technique work.';
+            }
+        } else if (roundedScore >= 60) {
+            // Moderate overall recovery – be more conservative.
+            trainingType = 'Reduced Training';
+            trainingIntensity = 'Light';
+            trainingFocus = 'Technique, mobility and avoid heavily loading sore areas';
+            const areas = highSorenessAreas.join(', ');
+            reason = `Moderate recovery with high soreness in ${areas}; consider a lighter session and avoid heavy loading of those areas.`;
+        }
+        // For low recovery we keep the original low‑recovery recommendation (recovery session).
     }
 
     return {
